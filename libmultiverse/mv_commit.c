@@ -5,6 +5,9 @@
 #include "arch.h"
 #include "platform.h"
 
+// wait-free patching needs realloc
+#include <stdlib.h>
+#include "patch.h"
 
 /* TODO encapsulate all this stuff in mv_info */
 extern struct mv_info_fn *__start___multiverse_fn_ptr;
@@ -87,6 +90,10 @@ multiverse_select_mvfn(mv_transaction_ctx_t *ctx,
 
     if (mvfn == fn->active_mvfn) return 0;
 
+    // array of patches
+    void *patches = NULL;
+    size_t patches_size = 0;
+
     for (pp = fn->patchpoints_head; pp != NULL; pp = pp->next) {
         void *from, *to;
         unsigned char *location = pp->location;
@@ -97,17 +104,36 @@ multiverse_select_mvfn(mv_transaction_ctx_t *ctx,
 
         multiverse_arch_patchpoint_size(pp, &from, &to);
 
-        multiverse_transaction_unprotect(ctx, from);
-        if (from != to) {
-            multiverse_transaction_unprotect(ctx, to);
-        }
+        // This is not needed for wait-free patching
+        // (the whole transaction_ctx thing)
+        /* multiverse_transaction_unprotect(ctx, from); */
+        /* if (from != to) { */
+        /*     multiverse_transaction_unprotect(ctx, to); */
+        /* } */
+
+        size_t data_len = to - from;
+        size_t patch_len = sizeof(struct patch) + data_len;
+        size_t curr_offset = patches_size;
+        patches_size += patch_len;
+        patches = realloc(patches, patches_size);
+        struct patch *curr = (struct patch*)(patches + curr_offset);
+        curr->pos = pp->location;
+        curr->len = data_len;
 
         if (mvfn == NULL) {
-            multiverse_arch_patchpoint_revert(pp);
+            multiverse_arch_patchpoint_revert(pp, curr->data);
         } else {
-            multiverse_arch_patchpoint_apply(fn, mvfn, pp);
+            multiverse_arch_patchpoint_apply(fn, mvfn, pp, curr->data);
         }
     }
+
+    // print patch array
+    for (struct patch *curr = (struct patch*)patches;
+         (void*)curr < patches + patches_size;
+         curr = (void*)curr + sizeof(struct patch) + curr->len) {
+        multiverse_os_print("PATCH: %p, len: %d\n", curr->pos, curr->len);
+    }
+    // TODO: invoke syscall
 
     fn->active_mvfn = mvfn;
 

@@ -98,8 +98,9 @@ static void insert_offset_argument(unsigned char * callsite, void * callee) {
 
 void multiverse_arch_patchpoint_apply(struct mv_info_fn *fn,
                                       struct mv_info_mvfn *mvfn,
-                                      struct mv_patchpoint *pp) {
-    unsigned char *location = pp->location;
+                                      struct mv_patchpoint *pp,
+                                      unsigned char *buf) {
+    unsigned char *location = buf;
     // Select from original -> Swap out the current code
     if (fn->active_mvfn == NULL) {
         memcpy(&pp->swapspace[0], location, location_len(pp->type));
@@ -146,8 +147,9 @@ void multiverse_arch_patchpoint_apply(struct mv_info_fn *fn,
     multiverse_os_clear_cache(location, location_len(pp->type));
 }
 
-void multiverse_arch_patchpoint_revert(struct mv_patchpoint *pp) {
-    unsigned char *location = pp->location;
+void multiverse_arch_patchpoint_revert(struct mv_patchpoint *pp,
+                                       unsigned char *buf) {
+    unsigned char *location = buf;
     int size = location_len(pp->type);
     // Revert to original state
     memcpy(pp->location, &pp->swapspace[0], size);

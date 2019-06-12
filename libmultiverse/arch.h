@@ -47,12 +47,14 @@ void multiverse_arch_decode_mvfn_body(struct mv_info_mvfn *info);
 */
 void multiverse_arch_patchpoint_apply(struct mv_info_fn *fn,
                                       struct mv_info_mvfn *mvfn,
-                                      struct mv_patchpoint *pp);
+                                      struct mv_patchpoint *pp,
+                                      unsigned char *buf);
 
 /**
    @brief restores the code to the original form
 */
-void multiverse_arch_patchpoint_revert(struct mv_patchpoint *pp);
+void multiverse_arch_patchpoint_revert(struct mv_patchpoint *pp,
+                                       unsigned char *buf);
 
 /**
  * @brief Translates a patchpoint into two pointers indicating the
