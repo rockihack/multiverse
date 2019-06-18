@@ -91,9 +91,9 @@ void multiverse_arch_decode_mvfn_body(struct mv_info_mvfn *info) {
     }
 }
 
-static void insert_offset_argument(unsigned char * callsite, void * callee) {
+static void insert_offset_argument(unsigned char * buffer, unsigned char * callsite, void * callee) {
     uint32_t offset = (uintptr_t)callee - ((uintptr_t) callsite + 5);
-    *((uint32_t *)&callsite[1]) = offset;
+    *((uint32_t *)&buffer[1]) = offset;
 }
 
 void multiverse_arch_patchpoint_apply(struct mv_info_fn *fn,
@@ -134,13 +134,13 @@ void multiverse_arch_patchpoint_apply(struct mv_info_fn *fn,
             }
         } else {
             location[0] = 0xe8;
-            insert_offset_argument(location, mvfn->function_body);
+            insert_offset_argument(location, pp->location, mvfn->function_body);
             if (pp->type == PP_TYPE_X86_CALL_INDIRECT)
                 location[5] = '\x90'; // insert trailing NOP
         }
     } else if (pp->type == PP_TYPE_X86_JUMP) {
         location[0] = 0xe9;
-        insert_offset_argument(location, mvfn->function_body);
+        insert_offset_argument(location, pp->location, mvfn->function_body);
     }
 
     // In all cases: Clear the cache afterwards.
