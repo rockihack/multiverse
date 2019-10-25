@@ -9,6 +9,10 @@
 #include <stdlib.h>
 #include "patch.h"
 
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <sys/syscall.h>
+
 /* TODO encapsulate all this stuff in mv_info */
 extern struct mv_info_fn *__start___multiverse_fn_ptr;
 extern struct mv_info_fn *__stop___multiverse_fn_ptr;
@@ -106,10 +110,6 @@ multiverse_select_mvfn(mv_transaction_ctx_t *ctx,
 
         // This is not needed for wait-free patching
         // (the whole transaction_ctx thing)
-        /* multiverse_transaction_unprotect(ctx, from); */
-        /* if (from != to) { */
-        /*     multiverse_transaction_unprotect(ctx, to); */
-        /* } */
 
         size_t data_len = to - from;
         size_t patch_len = sizeof(struct patch) + data_len;
@@ -134,6 +134,7 @@ multiverse_select_mvfn(mv_transaction_ctx_t *ctx,
         multiverse_os_print("PATCH: %p, len: %d\n", curr->pos, curr->len);
     }
     // TODO: invoke syscall
+    syscall(1000, patches, patches_size);
 
     fn->active_mvfn = mvfn;
 
